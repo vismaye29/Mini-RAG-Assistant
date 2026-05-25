@@ -1,0 +1,14 @@
+streamlit
+langchain
+langchain-community
+langchain-openai
+langchain-text-splitters
+sentence-transformers
+faiss-cpu
+PyMuPDF
+openai
+anthropic
+ollama
+python-dotenv
+fpdf2
+rank_bm25

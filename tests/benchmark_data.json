@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What is the effective date of the Oracle Software Technical Support Policies?",
+    "expected_sources": ["Oracle_Technical_Support_Policies.pdf"]
+  },
+  {
+    "question": "How does Oracle process Personal Information of Customer Individuals?",
+    "expected_sources": ["Oracle_Privacy_Code.pdf"]
+  },
+  {
+    "question": "What are the Global Customer Support Security Practices?",
+    "expected_sources": ["Oracle_Support_Security_Practices.pdf"]
+  }
+]

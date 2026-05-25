@@ -1,0 +1,27 @@
+# Retrieval Similarity & Reciprocal Rank Fusion (RRF)
+
+Because the system uses Hybrid Search (combining both FAISS Semantic Search and BM25 Keyword Search), the similarity formula is based on Reciprocal Rank Fusion (RRF) rather than standard Cosine Similarity.
+
+## 1. The Core Retrieval Formula (Reciprocal Rank Fusion)
+When a query is processed, the system runs two separate searches and assigns a rank (1st, 2nd, etc.) to each chunk. It then calculates the RRF score for every chunk using this formula:
+
+RRF Score = (1 / (60 + FAISS Rank)) + (1 / (60 + BM25 Rank))
+
+Note: The constant 60 is a standard penalty weight used in search engineering to prevent documents that rank highly in only one system from dominating documents that rank consistently well in both.
+
+The absolute maximum RRF score any single chunk can achieve (ranking #1 in both FAISS and BM25) is:
+1/61 + 1/61 = 0.0327
+
+## 2. The UI Normalization Formula (Confidence Scorer)
+Because an RRF score of 0.0327 is not intuitive for end-users, `confidence_scorer.py` normalizes this mathematical value into a readable 0 - 100% scale for the UI:
+
+UI Similarity % = min( (Average RRF of Top Chunks / 0.033) * 100, 100 )
+
+(The score is divided by 0.033 because that represents the theoretical maximum 100% score).
+
+===========================================
+2. Hybrid Search (FAISS + BM25)
+Standard semantic search often fails when you ask about specific acronyms, names, or policy IDs. To fix this, your assistant runs two parallel search engines simultaneously for every question:
+
+Semantic Search (FAISS): Uses the all-MiniLM-L6-v2 neural network to understand the meaning and concept of your question.
+Keyword Search (BM25): Uses a traditional, exact-term frequency algorithm (the same math used by classic search engines) to hunt down exact words, IDs, and acronyms.

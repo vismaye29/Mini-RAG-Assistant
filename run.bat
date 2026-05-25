@@ -1,0 +1,5 @@
+@echo off
+call D:\softwares\anaconda3\Scripts\activate.bat
+call conda activate py310
+set "PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python"
+python -m streamlit run app.py
