@@ -1,14 +1,33 @@
-streamlit
-langchain
-langchain-community
-langchain-openai
-langchain-text-splitters
-sentence-transformers
-faiss-cpu
-PyMuPDF
-openai
-anthropic
-ollama
-python-dotenv
-fpdf2
-rank_bm25
+# ── UI ──────────────────────────────────────────────────────────────
+streamlit==1.29.0
+
+# ── LangChain stack ─────────────────────────────────────────────────
+langchain==1.3.1
+langchain-community==0.4.2
+langchain-openai==1.2.2
+langchain-text-splitters==1.1.2
+langchain-core==1.4.0
+
+# ── Embeddings & Vector Search ───────────────────────────────────────
+sentence-transformers==5.5.1
+faiss-cpu==1.14.2
+rank-bm25==0.2.2
+
+# ── PDF Processing ───────────────────────────────────────────────────
+PyMuPDF==1.27.2.3
+
+# ── LLM Providers ───────────────────────────────────────────────────
+openai==2.38.0
+anthropic==0.104.1
+ollama==0.6.2
+tiktoken==0.13.0
+
+# ── ML / Transformers ────────────────────────────────────────────────
+torch==2.12.0
+transformers==5.9.0
+
+# ── Utilities ────────────────────────────────────────────────────────
+python-dotenv==1.0.0
+fpdf2==2.8.7
+pydantic==2.13.4
+pydantic-settings==2.14.1
