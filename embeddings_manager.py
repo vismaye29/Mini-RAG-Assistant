@@ -81,12 +81,27 @@ class EmbeddingsManager:
         top_k: int = config.TOP_K,
         threshold: float = config.SIMILARITY_THRESHOLD,
         strategy: str = "hybrid",
+        filter_files: Optional[List[str]] = None,
     ) -> List[Tuple[str, dict, float]]:
         """
         Search using selected strategy: 'hybrid', 'semantic', or 'keyword'.
+
+        Args:
+            filter_files: If provided, only return chunks whose source_file is in this list.
         """
         if self.index is None or self.index.ntotal == 0 or self.bm25 is None:
             return []
+
+        # Build a set of allowed indices when a document filter is active
+        allowed_indices: Optional[set] = None
+        if filter_files:
+            filter_set = {f.lower() for f in filter_files}
+            allowed_indices = {
+                i for i, meta in enumerate(self.chunks_metadata)
+                if meta.get("source_file", "").lower() in filter_set
+            }
+            if not allowed_indices:
+                return []
 
         fetch_k = top_k * 3
         faiss_results = []
@@ -95,19 +110,25 @@ class EmbeddingsManager:
         # 1. FAISS Search
         if strategy in ["hybrid", "semantic"]:
             query_embedding = self.embed_texts([query])
-            scores, indices = self.index.search(query_embedding, min(fetch_k, self.index.ntotal))
+            # Fetch more candidates so filtering doesn't starve results
+            n_fetch = min(fetch_k if allowed_indices is None else self.index.ntotal, self.index.ntotal)
+            scores, indices = self.index.search(query_embedding, n_fetch)
             for score, idx in zip(scores[0], indices[0]):
                 if idx >= 0 and score >= threshold:
-                    faiss_results.append((idx, float(score)))
+                    if allowed_indices is None or idx in allowed_indices:
+                        faiss_results.append((idx, float(score)))
 
         # 2. BM25 Search
         if strategy in ["hybrid", "keyword"]:
             tokenized_query = query.lower().split()
             bm25_scores = self.bm25.get_scores(tokenized_query)
-            top_bm25_idx = np.argsort(bm25_scores)[::-1][:fetch_k]
+            top_bm25_idx = np.argsort(bm25_scores)[::-1]
             for idx in top_bm25_idx:
+                if len(bm25_results) >= fetch_k:
+                    break
                 if bm25_scores[idx] > 0:
-                    bm25_results.append((idx, float(bm25_scores[idx])))
+                    if allowed_indices is None or idx in allowed_indices:
+                        bm25_results.append((idx, float(bm25_scores[idx])))
 
         # 3. Combine / Score
         results = []
@@ -126,12 +147,10 @@ class EmbeddingsManager:
                 results.append((self.chunks_text[idx], self.chunks_metadata[idx], rrf_score))
 
         elif strategy == "semantic":
-            # Just use FAISS scores
             for idx, score in faiss_results[:top_k]:
                 results.append((self.chunks_text[idx], self.chunks_metadata[idx], score))
                 
         elif strategy == "keyword":
-            # Just use BM25 scores
             for idx, score in bm25_results[:top_k]:
                 results.append((self.chunks_text[idx], self.chunks_metadata[idx], score))
 

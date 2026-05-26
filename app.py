@@ -412,6 +412,21 @@ with st.sidebar:
 
     top_k = st.slider("Top-K Results", min_value=1, max_value=15, value=config.TOP_K, step=1)
 
+    # ── Document Scope Filter ──
+    st.divider()
+    st.markdown("#### 🎯 Document Scope")
+    all_docs = sorted([pdf.name for pdf in config.DOCUMENTS_DIR.glob("*.pdf")])
+    selected_docs = st.multiselect(
+        "Search only in selected documents (leave empty to search all)",
+        options=all_docs,
+        default=[],
+        help="Pin your query to specific documents. Leave empty to search across all.",
+        label_visibility="collapsed",
+        placeholder="All documents (no filter)",
+    )
+    if selected_docs:
+        st.info(f"🎯 Scoped to: {', '.join(selected_docs)}")
+
     st.divider()
     st.markdown(
         "<p style='text-align:center; color:rgba(255,255,255,0.3); font-size:0.75rem;'>"
@@ -491,7 +506,12 @@ if query:
     with st.chat_message("assistant"):
         with st.spinner("Searching knowledge base & generating answer..."):
             start_time = time.time()
-            response = engine.query(query, top_k=top_k, strategy=search_strategy)
+            response = engine.query(
+                query,
+                top_k=top_k,
+                strategy=search_strategy,
+                filter_files=selected_docs if selected_docs else None,
+            )
             elapsed = time.time() - start_time
 
         metrics = getattr(response, "metrics", {})

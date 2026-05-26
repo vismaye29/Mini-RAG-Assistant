@@ -134,7 +134,13 @@ class RAGEngine:
             ))
         return loaded
 
-    def query(self, question: str, top_k: int = config.TOP_K, strategy: str = "hybrid") -> RAGResponse:
+    def query(
+        self,
+        question: str,
+        top_k: int = config.TOP_K,
+        strategy: str = "hybrid",
+        filter_files: Optional[List[str]] = None,
+    ) -> RAGResponse:
         """
         Answer a user question using the RAG pipeline.
 
@@ -147,6 +153,7 @@ class RAGEngine:
             question: The user's natural-language question.
             top_k: Number of chunks to retrieve.
             strategy: 'hybrid', 'semantic', or 'keyword' search.
+            filter_files: If set, restrict retrieval to only these document filenames.
 
         Returns:
             RAGResponse with answer, confidence, and sources.
@@ -163,13 +170,13 @@ class RAGEngine:
                     provider_name="N/A",
                 )
 
-        # Step 1: Retrieve
-        results = self.embeddings.search(question, top_k=top_k, strategy=strategy)
+        # Step 1: Retrieve (optionally scoped to specific documents)
+        results = self.embeddings.search(question, top_k=top_k, strategy=strategy, filter_files=filter_files)
 
         if not results:
             return RAGResponse(
                 answer="I couldn't find any relevant information in the knowledge base for your question. "
-                       "Try rephrasing or asking about a topic covered in the uploaded documents.",
+                       + (f"Note: search was scoped to: {', '.join(filter_files)}. Try removing the document filter or rephrasing." if filter_files else "Try rephrasing or asking about a topic covered in the uploaded documents."),
                 sources=[],
                 confidence={"score": 0, "label": "No Match", "icon": "🔴", "breakdown": {}},
                 query=question,
