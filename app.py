@@ -266,6 +266,10 @@ if "engine" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+# Tracks which docs were most recently uploaded — used to auto-scope queries
+if "uploaded_doc_scope" not in st.session_state:
+    st.session_state.uploaded_doc_scope = []
+
 
 def get_engine() -> RAGEngine:
     return st.session_state.engine
@@ -321,7 +325,9 @@ with st.sidebar:
 
     if uploaded_files:
         new_files = False
+        uploaded_names = []
         for uploaded_file in uploaded_files:
+            uploaded_names.append(uploaded_file.name)
             # Check if this file is already in the database to avoid infinite rebuilding
             if uploaded_file.name not in st.session_state.ingest_stats.get("ingested_files", []):
                 new_files = True
@@ -344,6 +350,8 @@ with st.sidebar:
             st.session_state.ingest_stats = stats
             if stats["status"] == "success":
                 st.session_state.index_ready = True
+                # Auto-scope to the uploaded files
+                st.session_state.uploaded_doc_scope = uploaded_names
                 st.success("✅ Index automatically updated!")
             else:
                 st.error(f"❌ {stats['message']}")
@@ -415,17 +423,33 @@ with st.sidebar:
     # ── Document Scope Filter ──
     st.divider()
     st.markdown("#### 🎯 Document Scope")
+
     all_docs = sorted([pdf.name for pdf in config.DOCUMENTS_DIR.glob("*.pdf")])
+
+    # Filter out any stale names that no longer exist on disk
+    valid_scope = [d for d in st.session_state.uploaded_doc_scope if d in all_docs]
+    st.session_state.uploaded_doc_scope = valid_scope
+
     selected_docs = st.multiselect(
-        "Search only in selected documents (leave empty to search all)",
+        "Scope",
         options=all_docs,
-        default=[],
-        help="Pin your query to specific documents. Leave empty to search across all.",
+        default=valid_scope,
+        help="Automatically set to uploaded files. Clear to search all documents.",
         label_visibility="collapsed",
         placeholder="All documents (no filter)",
+        key="doc_scope_select",
     )
+
+    # Sync manual changes back to session state
+    st.session_state.uploaded_doc_scope = selected_docs
+
     if selected_docs:
-        st.info(f"🎯 Scoped to: {', '.join(selected_docs)}")
+        st.info(f"🎯 Scoped to **{len(selected_docs)}** doc(s): {', '.join(selected_docs)}")
+        if st.button("🔓 Search All Documents", use_container_width=True):
+            st.session_state.uploaded_doc_scope = []
+            st.rerun()
+    else:
+        st.caption("Searching across all documents.")
 
     st.divider()
     st.markdown(

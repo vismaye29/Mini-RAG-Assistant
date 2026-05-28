@@ -203,9 +203,18 @@ class RAGEngine:
         user_prompt = (
             f"Context from the knowledge base:\n"
             f"---\n{context_block}\n---\n\n"
-            f"Question: {question}\n\n"
-            f"Based on the above context, provide a detailed and accurate answer. "
-            f"Cite the source document and page number for each piece of information."
+            f"User Question: {question}\n\n"
+            f"Instructions:\n"
+            f"1. Provide a comprehensive answer to the question using ONLY the context above.\n"
+            f"2. Structure your response clearly:\n"
+            f"   - Start with a direct definition or answer\n"
+            f"   - Follow with detailed explanation and elaboration\n"
+            f"   - Use bullet points or numbered lists for multi-part information\n"
+            f"   - Include relevant context, implications, or conditions\n"
+            f"3. Cite sources using this format: (Source: filename.pdf, Page X)\n"
+            f"4. If multiple sources provide related information, synthesize them into a cohesive explanation.\n"
+            f"5. If the context doesn't contain sufficient information, state what's missing.\n\n"
+            f"Provide a detailed, well-structured answer:"
         )
 
         # Step 3: Generate
@@ -249,7 +258,9 @@ class RAGEngine:
             source = meta.get("source_file", "Unknown")
             page = meta.get("page_number", "?")
             parts.append(
-                f"[Source {i}: {source}, Page {page} | RRF Score: {score:.4f}]\n{text}"
+                f"[Source {i}: {source}, Page {page} | Relevance Score: {score:.4f}]\n"
+                f"{text.strip()}\n"
+                f"[End of Source {i}]"
             )
         return "\n\n".join(parts)
 
